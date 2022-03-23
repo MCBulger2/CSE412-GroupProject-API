@@ -135,7 +135,7 @@ psql -U $USER -d $1 -c "INSERT INTO ConversationMessage (content, sender_id, con
     ('Same an quit most an. Admitting an mr disposing sportsmen.', 8, 5),
     ('New the her nor case that lady paid read. Invitation friendship travelling eat everything the out two. Shy you who scarcely expenses debating hastened resolved. Always polite moment on is warmth spirit it to hearts. Downs those still witty an balls so chief so. Moment an little remain no up lively no. Way brought may off our regular country towards adapted cheered. ', 7, 5),
     ('Placing assured be', 8, 5),
-    ('Far shed each high read are men over day. Afraid we praise', 8, 5)
+    ('Far shed each high read are men over day. Afraid we praise', 8, 5),
     ('By an outlived insisted procured improved am. ', 8, 5)
 ;"
 
