@@ -2,6 +2,7 @@ from flask import Blueprint, make_response, request
 import json
 from app.utils import reply, connect
 import bcrypt
+import base64
 import app.friend.helpers as friend_helpers
 
 bp = Blueprint('profile', __name__)
@@ -16,25 +17,49 @@ def get_profile(user_id):
         ;
     """ %(user_id))
     profile = cur.fetchone()
+    #if profile["profile_picture"] is not None:
+    #    profile["profile_picture"] = profile["profile_picture"].tobytes().decode()
+    print(profile["profile_picture"])
 
     return json.dumps(profile, default=str)
+
+@bp.route("/<user_id>/picture", methods=["GET"])
+def get_profile_picture(user_id):
+    (cur, conn) = connect()
+    cur.execute("""
+        SELECT pf.profile_picture
+        FROM Profile as pf
+        WHERE pf.user_id = %s
+        ;
+    """ %(user_id))
+    profile = cur.fetchone()
+    if profile["profile_picture"] is not None:
+        profile["profile_picture"] = profile["profile_picture"].tobytes()
+    print(profile["profile_picture"])
+
+    response = make_response(profile["profile_picture"])
+    response.headers.set('Content-Type', 'image/png')
+    response.headers.set(
+        'Content-Disposition', 'attachment', filename=f'{user_id}.png')
+    return response
 
 @bp.route("", methods=["POST"])
 def create_profile():
     data = request.json
     pw = data["pw_hash"]
+    profile_picture = base64.b64decode(data["profile_picture"])
     hashed_pw = bcrypt.hashpw(pw.encode(), bcrypt.gensalt())
-    print(hashed_pw)
-    print(bcrypt.checkpw(pw.encode(), hashed_pw))
+    print()
+    #print(bcrypt.checkpw(pw.encode(), hashed_pw))
     (cur, conn) = connect()
 
     try:    
         cur.execute("""
-            INSERT INTO Profile (username, name, pw_hash)
-            VALUES (%s, %s, %s)
+            INSERT INTO Profile (username, name, pw_hash, profile_picture)
+            VALUES (%s, %s, %s, %s)
             RETURNING user_id
             ;
-        """, (data["username"], data["name"], hashed_pw))
+        """, (data["username"], data["name"], hashed_pw, profile_picture))
         user_id = cur.fetchone()
         conn.commit()
         return reply(user_id)

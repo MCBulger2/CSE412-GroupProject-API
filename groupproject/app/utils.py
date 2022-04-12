@@ -7,7 +7,7 @@ connectionPath = "connection.txt"
 
 def reply(response):
     res = jsonify(response)
-    res.headers.add('Access-Control-Allow-Origin', '*')
+    # res.headers.add('Access-Control-Allow-Origin', '*')
     return res
 
 def connect():

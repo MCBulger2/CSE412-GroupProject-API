@@ -27,7 +27,7 @@ def get_conversation(conversation_id):
         conversation = cur.fetchone()
 
         cur.execute("""
-            SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
+            SELECT pf.user_id, pf.username, pf.name, pf.birthday
             FROM Conversation AS co
             JOIN ConversationUsers AS cu ON co.conversation_id = cu.conversation_id
             JOIN Profile AS pf ON cu.user_id = pf.user_id
@@ -52,6 +52,7 @@ def get_conversation(conversation_id):
         conversation_messages = cur.fetchall()
         conversation["messages"] = conversation_messages
 
+        print(conversation)
         return json.dumps(conversation, default=str)
     except:
         return make_response(json.dumps("This conversation does not exist."), 404)
