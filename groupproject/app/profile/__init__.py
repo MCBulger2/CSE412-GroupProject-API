@@ -47,7 +47,9 @@ def get_profile_picture(user_id):
 def create_profile():
     data = request.json
     pw = data["pw_hash"]
-    profile_picture = base64.b64decode(data["profile_picture"])
+    pf = data["profile_picture"]
+    print(pf)
+    profile_picture = base64.b64decode(pf)
     hashed_pw = bcrypt.hashpw(pw.encode(), bcrypt.gensalt())
     print()
     #print(bcrypt.checkpw(pw.encode(), hashed_pw))
