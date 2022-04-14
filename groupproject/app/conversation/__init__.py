@@ -14,48 +14,65 @@ def get_conversations():
     
 @bp.route("/<conversation_id>", methods=["GET"])
 def get_conversation(conversation_id):
-    try:
-        cookie_user = int(request.cookies.get("user_id"))
-        print(cookie_user)
-        (cur, conn) = connect()
+    #try:
+    cookie_user = int(request.cookies.get("user_id"))
+    (cur, conn) = connect()
+    cur.execute("""
+        SELECT *
+        FROM Conversation AS co
+        WHERE co.conversation_id = %s
+        ;
+    """ %(conversation_id))
+    conversation = cur.fetchone()
+
+    cur.execute("""
+        SELECT pf.user_id, pf.username, pf.name, pf.birthday, cu.read_receipt
+        FROM Conversation AS co
+        JOIN ConversationUsers AS cu ON co.conversation_id = cu.conversation_id
+        JOIN Profile AS pf ON cu.user_id = pf.user_id
+        WHERE co.conversation_id = %s
+        ;
+    """ %(conversation_id))
+    conversation_users = cur.fetchall()
+    print(conversation_users)
+    conversation["users"] = conversation_users
+
+    if all(cookie_user != user["user_id"] for user in conversation_users):
+        return make_response(json.dumps("You do not have access to view this conversation."), 401)
+
+    cur.execute("""
+        SELECT cm.message_id, cm.content, cm.timestamp, cm.sender_id, pf.username, pf.name
+        FROM Conversation AS co
+        JOIN ConversationMessage AS cm ON co.conversation_id = cm.conversation_id
+        JOIN Profile AS pf ON cm.sender_id = pf.user_id
+        WHERE co.conversation_id = %s
+        ORDER BY cm.timestamp
+        ;
+    """, (conversation_id,))
+    conversation_messages = cur.fetchall()
+    conversation["messages"] = conversation_messages
+
+    if len(conversation_messages) > 0:
+        idx = -1
+        last_message = conversation_messages[idx]
+        #print(last_message)
+        #while last_message["sender_id"] == cookie_user:
+        #    idx -= 1
+        #    last_message = conversation_messages[idx]
+        last_message_id = last_message["message_id"]
+        print(last_message_id)
         cur.execute("""
-            SELECT *
-            FROM Conversation AS co
-            WHERE co.conversation_id = %s
+            UPDATE ConversationUsers AS cu
+            SET read_receipt = %s
+            WHERE cu.conversation_id = %s AND cu.user_id = %s
             ;
-        """ %(conversation_id))
-        conversation = cur.fetchone()
+        """, (last_message_id, conversation_id, cookie_user))
+        conn.commit()
 
-        cur.execute("""
-            SELECT pf.user_id, pf.username, pf.name, pf.birthday
-            FROM Conversation AS co
-            JOIN ConversationUsers AS cu ON co.conversation_id = cu.conversation_id
-            JOIN Profile AS pf ON cu.user_id = pf.user_id
-            WHERE co.conversation_id = %s
-            ;
-        """ %(conversation_id))
-        conversation_users = cur.fetchall()
-        conversation["users"] = conversation_users
 
-        if all(cookie_user != user["user_id"] for user in conversation_users):
-            return make_response(json.dumps("You do not have access to view this conversation."), 401)
-
-        cur.execute("""
-            SELECT cm.message_id, cm.content, cm.timestamp, cm.sender_id, pf.username, pf.name
-            FROM Conversation AS co
-            JOIN ConversationMessage AS cm ON co.conversation_id = cm.conversation_id
-            JOIN Profile AS pf ON cm.sender_id = pf.user_id
-            WHERE co.conversation_id = %s
-            ORDER BY cm.timestamp
-            ;
-        """, (conversation_id,))
-        conversation_messages = cur.fetchall()
-        conversation["messages"] = conversation_messages
-
-        print(conversation)
-        return json.dumps(conversation, default=str)
-    except:
-        return make_response(json.dumps("This conversation does not exist."), 404)
+    return json.dumps(conversation, default=str)
+    #except:
+        #return make_response(json.dumps("This conversation does not exist."), 404)
         
 
 @bp.route("", methods=["POST"])
@@ -72,14 +89,11 @@ def create_conversation():
     """, (name,))
     res = cur.fetchone()
     conversation_id = res["conversation_id"]
-    print(conversation_id)
 
     if (cookie_user in users):
         return make_response("Error", 400)
 
     for user_id in users + [cookie_user]:
-        print(user_id)
-        print(conversation_id)
         cur.execute("""
             INSERT INTO ConversationUsers (conversation_id, user_id)
             VALUES (%s, %s)
@@ -141,6 +155,7 @@ def send_message():
     (cur, conn) = connect()
 
     conversations = helpers.get_conversations(cur, cookie_user)
+    print(conversations)
     if not any(conversation_id == conversation["conversation_id"] for conversation in conversations):
         return make_response("The conversation does not exist, or you are not allowed to send a message in this conversation.", 401)
     
@@ -151,7 +166,16 @@ def send_message():
         ;
     """, (content, cookie_user, conversation_id))
     message_id = cur.fetchone()
+
+    #cur.execute("""
+    #    UPDATE ConversationUsers AS cu
+    #    SET read_receipt = %s
+    #    WHERE cu.conversation_id = %s AND cu.user_id = %s
+    #    ;
+    #""", (message_id, conversation_id, cookie_user))
+
     conn.commit()
 
     return make_response(message_id)
+
 

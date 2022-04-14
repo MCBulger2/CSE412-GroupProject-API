@@ -34,12 +34,24 @@ psql -U $USER -d cse412groupproject -c "CREATE TABLE ConversationMessage (
 psql -U $USER -d cse412groupproject -c "CREATE TABLE ConversationUsers (
 	conversation_id INT NOT NULL REFERENCES Conversation ON DELETE CASCADE,
 	user_id INT NOT NULL REFERENCES Profile ON DELETE CASCADE,
+    read_receipt INT REFERENCES ConversationMessage,
 	PRIMARY KEY (conversation_id, user_id)
 );"
 psql -U $USER -d cse412groupproject -c "CREATE TABLE Friend (
 	friender_id INT NOT NULL REFERENCES Profile (user_id) ON DELETE CASCADE,
 	friendee_id INT NOT NULL REFERENCES Profile (user_id) ON DELETE CASCADE,
 	PRIMARY KEY (friender_id, friendee_id)
+);"
+
+psql -U $USER -d cse412groupproject -c "CREATE VIEW ConversationView AS (
+    SELECT c.conversation_id, c.name, lt.message_id AS last_message
+    FROM Conversation AS c
+    FULL OUTER JOIN (
+        SELECT cm.conversation_id, MAX(cm.timestamp) as timestamp, MAX(cm.message_id) as message_id
+        FROM ConversationMessage AS cm
+        GROUP BY cm.conversation_id
+    ) AS lt ON lt.conversation_id = c.conversation_id
+    ORDER BY lt.timestamp DESC
 );"
 
 # Insert synthetic data into the database

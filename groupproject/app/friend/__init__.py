@@ -8,7 +8,6 @@ bp = Blueprint('friend', __name__)
 @bp.route("/friender", methods=["GET"])
 def get_friender():
     cookie_user = request.cookies.get("user_id")
-    print(cookie_user)
     (cur, conn) = connect()
     cur.execute("""
         SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
@@ -24,7 +23,6 @@ def get_friender():
 @bp.route("/friendee", methods=["GET"])
 def get_friendee():
     cookie_user = request.cookies.get("user_id")
-    print(cookie_user)
     (cur, conn) = connect()
     friends = helpers.get_my_friends(cur, cookie_user)
 

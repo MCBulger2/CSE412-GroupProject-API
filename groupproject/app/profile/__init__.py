@@ -19,40 +19,48 @@ def get_profile(user_id):
     profile = cur.fetchone()
     #if profile["profile_picture"] is not None:
     #    profile["profile_picture"] = profile["profile_picture"].tobytes().decode()
-    print(profile["profile_picture"])
 
     return json.dumps(profile, default=str)
 
 @bp.route("/<user_id>/picture", methods=["GET"])
 def get_profile_picture(user_id):
-    (cur, conn) = connect()
-    cur.execute("""
-        SELECT pf.profile_picture
-        FROM Profile as pf
-        WHERE pf.user_id = %s
-        ;
-    """ %(user_id))
-    profile = cur.fetchone()
-    if profile["profile_picture"] is not None:
-        profile["profile_picture"] = profile["profile_picture"].tobytes()
-    print(profile["profile_picture"])
+    try:
+        (cur, conn) = connect()
+        cur.execute("""
+            SELECT pf.profile_picture
+            FROM Profile as pf
+            WHERE pf.user_id = %s
+            ;
+        """ %(user_id))
+        profile = cur.fetchone()
+        if profile["profile_picture"] is not None:
+            profile["profile_picture"] = profile["profile_picture"].tobytes()
 
-    response = make_response(profile["profile_picture"])
-    response.headers.set('Content-Type', 'image/png')
-    response.headers.set(
-        'Content-Disposition', 'attachment', filename=f'{user_id}.png')
-    return response
+        response = make_response(profile["profile_picture"])
+        response.headers.set('Content-Type', 'image/png')
+        response.headers.set(
+            'Content-Disposition', 'attachment', filename=f'{user_id}.png')
+        return response
+    except:
+        return make_response("Profile picture does not exist.", 404)
+        
 
 @bp.route("", methods=["POST"])
 def create_profile():
     data = request.json
     pw = data["pw_hash"]
-    pf = data["profile_picture"]
-    print(pf)
-    profile_picture = base64.b64decode(pf)
+
+    profile_picture = None
+    pf = None
+    try:
+        pf = data["profile_picture"]
+        profile_picture = base64.b64decode(pf)
+    except:
+        pf = None
+        profile_picture = None
+
+    
     hashed_pw = bcrypt.hashpw(pw.encode(), bcrypt.gensalt())
-    print()
-    #print(bcrypt.checkpw(pw.encode(), hashed_pw))
     (cur, conn) = connect()
 
     try:    
@@ -109,7 +117,7 @@ def get_profile_feed(user_id):
         ;
     """ %(user_id, cookie_user))
     friendship = cur.fetchone()
-    if friendship is None:
+    if cookie_user != int(user_id) and friendship is None:
         return make_response("You are not authorized to view this user's feed.", 401)
 
     cur.execute("""
@@ -140,7 +148,6 @@ def get_all_friend_feeds():
         ORDER BY timestamp
     """, (cookie_user,))
     messages = cur.fetchall()
-    print(messages)
 
     return make_response(json.dumps(messages, default=str))
 

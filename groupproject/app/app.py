@@ -9,7 +9,7 @@ from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, supports_credentials=True, resources={r"*": {"origins": ["http://localhost:3000", "http://192.168.1.19:3000"]}})
+    CORS(app, supports_credentials=True, resources={r"*": {"origins": ["http://localhost:3000", "http://192.168.1.19:3000", "http://192.168.1.19:3001", "http://cse412.mattbulger.me"]}})
 
     with app.app_context():
         from profile import bp as profile_bp

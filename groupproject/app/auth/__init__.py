@@ -9,7 +9,6 @@ bp = Blueprint('auth', __name__)
 def login():
     args = request.args
     username = args.get("username")
-    print(username)
 
     (cur, conn) = connect()
     cur.execute("""
@@ -21,12 +20,6 @@ def login():
     user = cur.fetchone()
 
     pw = args.get("pw_hash")
-    print(pw.encode())
-    print(user)
-    #try:
-    print('ehre')
-    # print(bcrypt.checkpw(pw.encode(), user["pw_hash"]))
-    print('ehre2')
     try:
         if not bcrypt.checkpw(pw.encode(), bytes(user["pw_hash"])):
             response = make_response("The account does not exist or your password was incorrect.", 401) 
