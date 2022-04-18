@@ -40,6 +40,7 @@ psql -U $USER -d cse412groupproject -c "CREATE TABLE ConversationUsers (
 psql -U $USER -d cse412groupproject -c "CREATE TABLE Friend (
 	friender_id INT NOT NULL REFERENCES Profile (user_id) ON DELETE CASCADE,
 	friendee_id INT NOT NULL REFERENCES Profile (user_id) ON DELETE CASCADE,
+    is_accepted INT NOT NULL DEFAULT 0,
 	PRIMARY KEY (friender_id, friendee_id)
 );"
 
@@ -90,19 +91,19 @@ psql -U $USER -d cse412groupproject -c "INSERT INTO Profile (username, name, bir
 ;"
 
 # Friendships
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (1, 2), (2, 1), (1, 3), (3, 1), (2, 3), (3, 2);"      # First 3 users are all friends with each other
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (4, 1), (5, 1), (4, 5), (5, 4);"                      # 4 and 5 are friends with 1 but not vice versa, and friends with each other
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (6, 2), (2, 6), (6, 3), (4, 6);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (7, 6), (6, 7), (7, 5), (5, 7);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (8, 9), (8, 10), (8, 11), (8, 12);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (9, 8), (9, 10), (9, 11), (9, 12);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (10, 11), (10, 8), (10, 9);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (11, 10), (11, 8), (11, 9);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (12, 10), (12, 8), (12, 9);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (30, 29), (29, 30);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (29, 28), (28, 29);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (28, 27), (27, 28);"
-psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (27, 26), (26, 27);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (1, 2, 1), (2, 1, 1), (1, 3, 1), (3, 1, 1), (2, 3, 1), (3, 2, 1);"      # First 3 users are all friends with each other
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (4, 1, 1), (5, 1, 1), (4, 5, 1), (5, 4, 1);"                      # 4 and 5 are friends with 1 but not vice versa, and friends with each other
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (6, 2, 1), (2, 6, 1), (6, 3, 1), (4, 6, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (7, 6, 1), (6, 7, 1), (7, 5, 1), (5, 7, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (8, 9, 1), (8, 10, 1), (8, 11, 1), (8, 12, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (9, 8, 1), (9, 10, 1), (9, 11, 1), (9, 12, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (10, 11, 1), (10, 8, 1), (10, 9, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (11, 10, 1), (11, 8, 1), (11, 9, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (12, 10, 1), (12, 8, 1), (12, 9, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (30, 29, 1), (29, 30, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (29, 28, 1), (28, 29, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (28, 27, 1), (27, 28, 1);"
+psql -U $USER -d cse412groupproject -c "INSERT INTO Friend VALUES (27, 26, 1), (26, 27, 1);"
 
 
 # Create conversations

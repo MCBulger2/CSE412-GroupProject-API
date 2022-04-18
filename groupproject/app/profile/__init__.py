@@ -17,8 +17,8 @@ def get_profile(user_id):
         ;
     """ %(user_id))
     profile = cur.fetchone()
-    #if profile["profile_picture"] is not None:
-    #    profile["profile_picture"] = profile["profile_picture"].tobytes().decode()
+    if profile["profile_picture"] is not None:
+        profile["profile_picture"] = base64.b64encode(profile["profile_picture"]).decode()
 
     return json.dumps(profile, default=str)
 
@@ -80,16 +80,25 @@ def create_profile():
 def update_profile():
     cookie_user = int(request.cookies.get("user_id"))
     data = request.json
+    username = data["username"]
     name = data["name"]
     birthday = data["birthday"]
-    profile_picture = data["profile_picture"]
+    
+    profile_picture = None
+    pf = None
+    try:
+        pf = data["profile_picture"]
+        profile_picture = base64.b64decode(pf)
+    except:
+        pf = None
+        profile_picture = None
 
     (cur, conn) = connect()
     cur.execute("""
         UPDATE Profile
-        SET name = %s, birthday = %s, profile_picture = %s
+        SET username = %s, name = %s, birthday = %s, profile_picture = %s
         WHERE user_id = %s
-    """, (name, birthday, profile_picture, cookie_user))
+    """, (username, name, birthday, profile_picture, cookie_user))
     conn.commit()
     
     return reply(True)

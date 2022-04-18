@@ -28,6 +28,14 @@ def get_friendee():
 
     return make_response(json.dumps(friends, default=str))
 
+@bp.route("/pending", methods=["GET"])
+def get_pending():
+    cookie_user = request.cookies.get("user_id")
+    (cur, conn) = connect()
+    friends = helpers.get_my_friends(cur, cookie_user, 0)
+
+    return make_response(json.dumps(friends, default=str))
+
 @bp.route("/befriend/<username>", methods=["POST"])
 def befriend_user(username):
     cookie_user = int(request.cookies.get("user_id"))
@@ -38,9 +46,43 @@ def befriend_user(username):
             FROM Profile AS pf
             WHERE pf.username = '%s'
             LIMIT 1
+        ), 0)
+        ;
+    """ %(cookie_user, username))
+    cur.execute("""
+        INSERT INTO Friend VALUES ((
+            SELECT pf.user_id
+            FROM Profile AS pf
+            WHERE pf.username = '%s'
+            LIMIT 1
+        ), %s, 0)
+        ;
+    """ %(cookie_user, username))
+    conn.commit()
+
+    return reply(True)
+
+@bp.route("/accept/<user_id>", methods=["POST"])
+def accept_request(user_id):
+    cookie_user = int(request.cookies.get("user_id"))
+    (cur, conn) = connect()
+
+    cur.execute("""
+        INSERT INTO Friend VALUES (%s, (
+            SELECT pf.user_id
+            FROM Profile AS pf
+            WHERE pf.username = '%s'
+            LIMIT 1
         ))
         ;
     """ %(cookie_user, username))
+
+    cur.execute("""
+        UPDATE Friend as fr
+        SET is_accepted = 1
+        WHERE fr.friendee_id = %s AND fr.friender_id = %s
+        ;
+    """ %(cookie_user, user_id))
     conn.commit()
 
     return reply(True)
