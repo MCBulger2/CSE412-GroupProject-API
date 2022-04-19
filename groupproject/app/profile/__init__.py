@@ -122,9 +122,9 @@ def get_profile_feed(user_id):
     cur.execute("""
         SELECT friender_id, friendee_id
         FROM Friend
-        WHERE friender_id = %s AND friendee_id = %s
+        WHERE (friender_id = %s AND friendee_id = %s) OR (friendee_id = %s AND friender_id = %s)
         ;
-    """ %(user_id, cookie_user))
+    """ %(user_id, cookie_user, user_id, cookie_user))
     friendship = cur.fetchone()
     if cookie_user != int(user_id) and friendship is None:
         return make_response("You are not authorized to view this user's feed.", 401)
