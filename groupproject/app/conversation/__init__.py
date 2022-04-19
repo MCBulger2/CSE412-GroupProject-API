@@ -22,7 +22,7 @@ def get_conversation(conversation_id):
         FROM Conversation AS co
         WHERE co.conversation_id = %s
         ;
-    """, (conversation_id))
+    """, (int(conversation_id),))
     conversation = cur.fetchone()
 
     cur.execute("""
@@ -32,7 +32,7 @@ def get_conversation(conversation_id):
         JOIN Profile AS pf ON cu.user_id = pf.user_id
         WHERE co.conversation_id = %s
         ;
-    """, (conversation_id))
+    """, (int(conversation_id),))
     conversation_users = cur.fetchall()
     print(conversation_users)
     conversation["users"] = conversation_users
@@ -48,7 +48,7 @@ def get_conversation(conversation_id):
         WHERE co.conversation_id = %s
         ORDER BY cm.timestamp
         ;
-    """, (conversation_id,))
+    """, (int(conversation_id),))
     conversation_messages = cur.fetchall()
     conversation["messages"] = conversation_messages
 
@@ -59,14 +59,14 @@ def get_conversation(conversation_id):
         #while last_message["sender_id"] == cookie_user:
         #    idx -= 1
         #    last_message = conversation_messages[idx]
-        last_message_id = last_message["message_id"]
+        last_message_id = int(last_message["message_id"])
         print(last_message_id)
         cur.execute("""
             UPDATE ConversationUsers AS cu
             SET read_receipt = %s
             WHERE cu.conversation_id = %s AND cu.user_id = %s
             ;
-        """, (last_message_id, conversation_id, cookie_user))
+        """, (last_message_id, int(conversation_id), cookie_user))
         conn.commit()
 
 
@@ -126,7 +126,7 @@ def add_user_to_conversation(conversation_id, user_id):
     cur.execute("""
         INSERT INTO ConversationUsers
         VALUES (%s, %s)
-    """, (conversation_id, user_id))
+    """, (int(conversation_id), int(user_id)))
     conn.commit()
 
     return make_response(json.dumps(True))
@@ -142,7 +142,7 @@ def delete_conversation(conversation_id):
             FROM ConversationUsers AS cu
             WHERE cu.user_id = %s AND cu.conversation_id = %s
         )
-    """, (cookie_user, conversation_id))
+    """, (cookie_user, int(conversation_id)))
     conn.commit()
 
     return reply(True)
@@ -150,7 +150,7 @@ def delete_conversation(conversation_id):
 @bp.route("/send", methods=["POST"])
 def send_message():
     cookie_user = int(request.cookies.get("user_id"))
-    conversation_id = request.json["conversation_id"]
+    conversation_id = int(request.json["conversation_id"])
     content = request.json["content"]
     (cur, conn) = connect()
 

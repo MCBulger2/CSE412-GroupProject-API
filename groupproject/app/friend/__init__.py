@@ -82,7 +82,7 @@ def befriend_user(username):
             INSERT INTO Friend VALUES (%s, (
                 SELECT pf.user_id
                 FROM Profile AS pf
-                WHERE pf.username = '%s'
+                WHERE pf.username = %s
                 LIMIT 1
             ), 0)
             ;
