@@ -5,34 +5,57 @@ import friend.helpers as helpers
 
 bp = Blueprint('friend', __name__)        
 
-@bp.route("/friender", methods=["GET"])
-def get_friender():
-    cookie_user = request.cookies.get("user_id")
-    (cur, conn) = connect()
-    cur.execute("""
-        SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
-        FROM Friend AS fr
-        JOIN Profile AS pf ON pf.user_id = fr.friendee_id
-        WHERE fr.friender_id = %s
-        ;
-    """, (cookie_user,))
-    friends = cur.fetchall()
+# @bp.route("/friender", methods=["GET"])
+# def get_friender():
+#     cookie_user = request.cookies.get("user_id")
+#     (cur, conn) = connect()
+#     cur.execute("""
+#         SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
+#         FROM Friend AS fr
+#         JOIN Profile AS pf ON pf.user_id = fr.friendee_id
+#         WHERE fr.friender_id = %s
+#         ;
+#     """, (cookie_user,))
+#     friends = cur.fetchall()
 
-    return make_response(json.dumps(friends, default=str))
+#     return make_response(json.dumps(friends, default=str))
 
-@bp.route("/friendee", methods=["GET"])
-def get_friendee():
+@bp.route("", methods=["GET"])
+def get_friends():
     cookie_user = request.cookies.get("user_id")
     (cur, conn) = connect()
     friends = helpers.get_my_friends(cur, cookie_user)
 
     return make_response(json.dumps(friends, default=str))
 
-@bp.route("/pending", methods=["GET"])
-def get_pending():
+@bp.route("/pending/in", methods=["GET"])
+def get_pending_incoming():
     cookie_user = request.cookies.get("user_id")
     (cur, conn) = connect()
     friends = helpers.get_my_friends(cur, cookie_user, 0)
+    cur.execute("""
+        SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
+        FROM Friend AS fr
+        JOIN Profile AS pf ON pf.user_id = fr.friender_id
+        WHERE fr.friendee_id = %s AND is_accepted = 0
+        ;
+    """, (cookie_user,))
+    friends = cur.fetchall()
+
+    return make_response(json.dumps(friends, default=str))
+
+@bp.route("/pending/out", methods=["GET"])
+def get_pending_outgoing():
+    cookie_user = request.cookies.get("user_id")
+    (cur, conn) = connect()
+    cur.execute("""
+        SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
+        FROM Friend AS fr
+        JOIN Profile AS pf ON pf.user_id = fr.friendee_id
+        WHERE fr.friender_id = %s AND is_accepted = 0
+        ;
+    """, (cookie_user, ))
+    friends = cur.fetchall()
 
     return make_response(json.dumps(friends, default=str))
 
@@ -40,6 +63,12 @@ def get_pending():
 def befriend_user(username):
     cookie_user = int(request.cookies.get("user_id"))
     (cur, conn) = connect()
+
+    friends = helpers.get_my_friends(cur, cookie_user, 0)
+    for friend in friends:
+        if friend["username"] == username:
+            return accept_request(friend["user_id"])
+
     cur.execute("""
         INSERT INTO Friend VALUES (%s, (
             SELECT pf.user_id
@@ -49,34 +78,15 @@ def befriend_user(username):
         ), 0)
         ;
     """ %(cookie_user, username))
-    cur.execute("""
-        INSERT INTO Friend VALUES ((
-            SELECT pf.user_id
-            FROM Profile AS pf
-            WHERE pf.username = '%s'
-            LIMIT 1
-        ), %s, 0)
-        ;
-    """ %(cookie_user, username))
+    
     conn.commit()
 
     return reply(True)
 
-@bp.route("/accept/<user_id>", methods=["POST"])
+@bp.route("/accept/<user_id>", methods=["GET"])
 def accept_request(user_id):
     cookie_user = int(request.cookies.get("user_id"))
     (cur, conn) = connect()
-
-    cur.execute("""
-        INSERT INTO Friend VALUES (%s, (
-            SELECT pf.user_id
-            FROM Profile AS pf
-            WHERE pf.username = '%s'
-            LIMIT 1
-        ))
-        ;
-    """ %(cookie_user, username))
-
     cur.execute("""
         UPDATE Friend as fr
         SET is_accepted = 1
@@ -94,6 +104,11 @@ def defriend_user(user_id):
     cur.execute("""
         DELETE FROM Friend
         WHERE friender_id = %s AND friendee_id = %s
+        ;
+    """, (cookie_user, user_id))
+    cur.execute("""
+        DELETE FROM Friend
+        WHERE friendee_id = %s AND friender_id = %s
         ;
     """, (cookie_user, user_id))
     conn.commit()
