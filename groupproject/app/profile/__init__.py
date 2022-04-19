@@ -15,7 +15,7 @@ def get_profile(user_id):
         FROM Profile as pf
         WHERE pf.user_id = %s
         ;
-    """ %(user_id))
+    """, (user_id))
     profile = cur.fetchone()
     if profile["profile_picture"] is not None:
         profile["profile_picture"] = base64.b64encode(profile["profile_picture"]).decode()
@@ -31,7 +31,7 @@ def get_profile_picture(user_id):
             FROM Profile as pf
             WHERE pf.user_id = %s
             ;
-        """ %(user_id))
+        """, (user_id))
         profile = cur.fetchone()
         if profile["profile_picture"] is not None:
             profile["profile_picture"] = profile["profile_picture"].tobytes()
@@ -124,7 +124,7 @@ def get_profile_feed(user_id):
         FROM Friend
         WHERE (friender_id = %s AND friendee_id = %s) OR (friendee_id = %s AND friender_id = %s)
         ;
-    """ %(user_id, cookie_user, user_id, cookie_user))
+    """, (user_id, cookie_user, user_id, cookie_user))
     friendship = cur.fetchone()
     if cookie_user != int(user_id) and friendship is None:
         return make_response("You are not authorized to view this user's feed.", 401)
@@ -135,7 +135,7 @@ def get_profile_feed(user_id):
         JOIN Profile AS pf ON pf.user_id = cm.sender_id
         WHERE cm.isfeedmessage = 1 AND cm.sender_id = %s
         ;
-    """ %(user_id))
+    """, (user_id))
     feed = cur.fetchall()
 
     return json.dumps(feed, default=str)

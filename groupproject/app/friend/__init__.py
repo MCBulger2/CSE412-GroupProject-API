@@ -64,24 +64,35 @@ def befriend_user(username):
     cookie_user = int(request.cookies.get("user_id"))
     (cur, conn) = connect()
 
-    friends = helpers.get_my_friends(cur, cookie_user, 0)
-    for friend in friends:
-        if friend["username"] == username:
-            return accept_request(friend["user_id"])
-
     cur.execute("""
-        INSERT INTO Friend VALUES (%s, (
-            SELECT pf.user_id
-            FROM Profile AS pf
-            WHERE pf.username = '%s'
-            LIMIT 1
-        ), 0)
-        ;
-    """ %(cookie_user, username))
-    
-    conn.commit()
+        SELECT user_id
+        FROM Profile
+        WHERE username = %s
+    """, (username,))
+    me = cur.fetchone()
+    if me is not None and me["user_id"] == cookie_user:
+        return make_response("You cannot befriend yourself.", 400)
+    try:
+        friends = helpers.get_my_friends(cur, cookie_user, 0)
+        for friend in friends:
+            if friend["username"] == username:
+                return accept_request(friend["user_id"])
 
-    return reply(True)
+        cur.execute("""
+            INSERT INTO Friend VALUES (%s, (
+                SELECT pf.user_id
+                FROM Profile AS pf
+                WHERE pf.username = '%s'
+                LIMIT 1
+            ), 0)
+            ;
+        """, (cookie_user, username))
+        
+        conn.commit()
+
+        return reply(True)
+    except:
+        return make_response("The provided username does not exist, or you are already friends.", 400)
 
 @bp.route("/accept/<user_id>", methods=["GET"])
 def accept_request(user_id):
@@ -92,7 +103,7 @@ def accept_request(user_id):
         SET is_accepted = 1
         WHERE fr.friendee_id = %s AND fr.friender_id = %s
         ;
-    """ %(cookie_user, user_id))
+    """, (cookie_user, user_id))
     conn.commit()
 
     return reply(True)

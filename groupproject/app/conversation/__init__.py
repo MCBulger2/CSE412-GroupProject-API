@@ -22,7 +22,7 @@ def get_conversation(conversation_id):
         FROM Conversation AS co
         WHERE co.conversation_id = %s
         ;
-    """ %(conversation_id))
+    """, (conversation_id))
     conversation = cur.fetchone()
 
     cur.execute("""
@@ -32,7 +32,7 @@ def get_conversation(conversation_id):
         JOIN Profile AS pf ON cu.user_id = pf.user_id
         WHERE co.conversation_id = %s
         ;
-    """ %(conversation_id))
+    """, (conversation_id))
     conversation_users = cur.fetchall()
     print(conversation_users)
     conversation["users"] = conversation_users
