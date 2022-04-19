@@ -15,7 +15,7 @@ def get_profile(user_id):
         FROM Profile as pf
         WHERE pf.user_id = %s
         ;
-    """, (user_id))
+    """, (int(user_id),))
     profile = cur.fetchone()
     if profile["profile_picture"] is not None:
         profile["profile_picture"] = base64.b64encode(profile["profile_picture"]).decode()
