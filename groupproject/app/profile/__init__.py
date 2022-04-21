@@ -31,7 +31,7 @@ def get_profile_picture(user_id):
             FROM Profile as pf
             WHERE pf.user_id = %s
             ;
-        """, (user_id))
+        """, (int(user_id),))
         profile = cur.fetchone()
         if profile["profile_picture"] is not None:
             profile["profile_picture"] = profile["profile_picture"].tobytes()
@@ -135,7 +135,7 @@ def get_profile_feed(user_id):
         JOIN Profile AS pf ON pf.user_id = cm.sender_id
         WHERE cm.isfeedmessage = 1 AND cm.sender_id = %s
         ;
-    """, (user_id))
+    """, (int(user_id),))
     feed = cur.fetchall()
 
     return json.dumps(feed, default=str)
@@ -146,14 +146,23 @@ def get_all_friend_feeds():
     (cur, conn) = connect()
 
     cur.execute("""
-        SELECT message_id, sender_id, pf.username, pf.name, content, timestamp
+        (SELECT message_id, sender_id, pf.username, pf.name, content, timestamp
         FROM ConversationMessage as cm
         JOIN Profile AS pf ON pf.user_id = cm.sender_id
         WHERE cm.isfeedmessage = 1 AND cm.sender_id IN (
             SELECT friender_id
             FROM Friend
             WHERE friendee_id = %s
-        )
+        ))
+        UNION
+        (SELECT message_id, sender_id, pf.username, pf.name, content, timestamp
+        FROM ConversationMessage as cm
+        JOIN Profile AS pf ON pf.user_id = cm.sender_id
+        WHERE cm.isfeedmessage = 1 AND cm.sender_id IN (
+            SELECT friendee_id
+            FROM Friend
+            WHERE friender_id = %s
+        ))
         ORDER BY timestamp
     """, (cookie_user,))
     messages = cur.fetchall()
