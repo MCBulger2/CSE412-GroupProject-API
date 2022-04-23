@@ -17,6 +17,7 @@ psql -U $USER -d cse412groupproject -c "CREATE TABLE Profile (
 	name TEXT,
 	birthday DATE,
 	profile_picture BYTEA,
+    is_jpeg INT,
 	pw_hash BYTEA NOT NULL
 );"
 psql -U $USER -d cse412groupproject -c "CREATE TABLE Conversation (

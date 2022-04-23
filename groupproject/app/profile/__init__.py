@@ -11,14 +11,14 @@ bp = Blueprint('profile', __name__)
 def get_profile(user_id):
     (cur, conn) = connect()
     cur.execute("""
-        SELECT pf.user_id, pf.username, pf.name, pf.birthday, pf.profile_picture
+        SELECT pf.user_id, pf.username, pf.name, pf.birthday
         FROM Profile as pf
         WHERE pf.user_id = %s
         ;
     """, (int(user_id),))
     profile = cur.fetchone()
-    if profile["profile_picture"] is not None:
-        profile["profile_picture"] = base64.b64encode(profile["profile_picture"]).decode()
+    # if profile["profile_picture"] is not None:
+    #     profile["profile_picture"] = base64.b64encode(profile["profile_picture"]).decode()
 
     return json.dumps(profile, default=str)
 
@@ -27,7 +27,7 @@ def get_profile_picture(user_id):
     try:
         (cur, conn) = connect()
         cur.execute("""
-            SELECT pf.profile_picture
+            SELECT pf.profile_picture, pf.is_jpeg
             FROM Profile as pf
             WHERE pf.user_id = %s
             ;
@@ -40,6 +40,10 @@ def get_profile_picture(user_id):
         response.headers.set('Content-Type', 'image/png')
         response.headers.set(
             'Content-Disposition', 'attachment', filename=f'{user_id}.png')
+        if profile["is_jpeg"] == 1:
+            response.headers.set('Content-Type', 'image/jpeg')
+            response.headers.set(
+                'Content-Disposition', 'attachment', filename=f'{user_id}.jpeg')
         return response
     except:
         return make_response("Profile picture does not exist.", 404)
@@ -49,6 +53,7 @@ def get_profile_picture(user_id):
 def create_profile():
     data = request.json
     pw = data["pw_hash"]
+    is_jpeg = data["isJpeg"]
 
     profile_picture = None
     pf = None
@@ -65,11 +70,11 @@ def create_profile():
 
     try:    
         cur.execute("""
-            INSERT INTO Profile (username, name, pw_hash, profile_picture)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO Profile (username, name, pw_hash, is_jpeg, profile_picture)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING user_id
             ;
-        """, (data["username"], data["name"], hashed_pw, profile_picture))
+        """, (data["username"], data["name"], hashed_pw, 1 if is_jpeg else 0, profile_picture))
         user_id = cur.fetchone()
         conn.commit()
         return reply(user_id)
@@ -83,11 +88,21 @@ def update_profile():
     username = data["username"]
     name = data["name"]
     birthday = data["birthday"]
+    is_jpeg = data["isJpeg"]
     
+    (cur, conn) = connect()
     profile_picture = None
     pf = None
     try:
         pf = data["profile_picture"]
+        if pf == "keep":
+            cur.execute("""
+                UPDATE Profile
+                SET username = %s, name = %s, birthday = %s
+                WHERE user_id = %s
+            """, (username, name, birthday, cookie_user))
+            conn.commit()
+            return reply(True)
         profile_picture = base64.b64decode(pf)
     except:
         pf = None
@@ -96,9 +111,38 @@ def update_profile():
     (cur, conn) = connect()
     cur.execute("""
         UPDATE Profile
-        SET username = %s, name = %s, birthday = %s, profile_picture = %s
+        SET username = %s, name = %s, birthday = %s, profile_picture = %s, is_jpeg = %s
         WHERE user_id = %s
-    """, (username, name, birthday, profile_picture, cookie_user))
+    """, (username, name, birthday, profile_picture, 1 if is_jpeg else 0, cookie_user))
+    conn.commit()
+    
+    return reply(True)
+
+@bp.route("/password", methods=["PUT"])
+def update_password():
+    cookie_user = int(request.cookies.get("user_id"))
+    data = request.json
+    password = data["password"]
+    newPassword = data["newPassword"]
+    (cur, conn) = connect()
+    cur.execute("""
+        SELECT pf.pw_hash
+        FROM Profile as pf
+        WHERE pf.user_id = %s
+        ;
+    """, (int(cookie_user),))
+    profile = cur.fetchone()
+
+    if not bcrypt.checkpw(password.encode(), bytes(profile["pw_hash"])):
+        return make_response("The password you entered does not match your current password.", 401)
+
+    hashed_pw = bcrypt.hashpw(newPassword.encode(), bcrypt.gensalt())
+    print(hashed_pw)
+    cur.execute("""
+        UPDATE Profile
+        SET pw_hash = %s
+        WHERE user_id = %s
+    """, (hashed_pw, cookie_user))
     conn.commit()
     
     return reply(True)
