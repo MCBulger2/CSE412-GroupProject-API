@@ -228,3 +228,20 @@ def post_to_feed():
     conn.commit()
 
     return make_response(json.dumps(message_id, default=str))
+
+@bp.route("/feed/<message_id>", methods=["DELETE"])
+def delete_feed_message(message_id):
+    cookie_user = int(request.cookies.get("user_id"))
+    (cur, conn) = connect()
+
+    cur.execute("""
+        DELETE FROM ConversationMessage
+        WHERE message_id = %s AND isFeedMessage = 1 AND sender_id = %s
+    """, (int(message_id), cookie_user))
+    rowcount = cur.rowcount
+    if rowcount == 0:
+        return make_response("There was an error deleting the indicated message. Either it does not exist, or you are not authorized to delete it.", 401)
+
+    conn.commit()
+
+    return reply(True)
