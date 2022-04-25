@@ -70,11 +70,11 @@ def create_profile():
 
     try:    
         cur.execute("""
-            INSERT INTO Profile (username, name, pw_hash, is_jpeg, profile_picture)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO Profile (username, name, birthday, pw_hash, is_jpeg, profile_picture)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING user_id
             ;
-        """, (data["username"], data["name"], hashed_pw, 1 if is_jpeg else 0, profile_picture))
+        """, (data["username"], data["name"], data["birthday"], hashed_pw, 1 if is_jpeg else 0, profile_picture))
         user_id = cur.fetchone()
         conn.commit()
         return reply(user_id)
